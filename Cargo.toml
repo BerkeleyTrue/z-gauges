@@ -1,0 +1,13 @@
+[package]
+name = "z-gauges"
+version = "0.1.0"
+authors = ["Berkeley Martinez"]
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+rand = "0.8.5"
+slint = "1.6"
+
+[build-dependencies]
+slint-build = "1.6"
