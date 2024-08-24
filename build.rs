@@ -1,3 +1,3 @@
 fn main() {
-    slint_build::compile("ui/appwindow.slint").unwrap();
+    println!("cargo:rustc-link-arg-bins=-Tlinkall.x");
 }
