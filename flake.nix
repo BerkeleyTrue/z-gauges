@@ -17,7 +17,7 @@
       imports = [
         inputs.boulder.flakeModule
       ];
-      systems = ["x86_64-linux" "aarch64-linux"];
+      systems = ["x86_64-linux"];
       perSystem = {
         config,
         system,
@@ -61,7 +61,7 @@
 
             buildInputs = buildInputs;
 
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+            # LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
           };
       };
       flake = {};

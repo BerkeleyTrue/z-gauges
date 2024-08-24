@@ -2,12 +2,16 @@
 name = "z-gauges"
 version = "0.1.0"
 authors = ["Berkeley Martinez"]
-edition = "2024"
+edition = "2021"
 build = "build.rs"
 
 [dependencies]
-rand = "0.8.5"
-slint = "1.6"
+slint = {version = "1.7.2"}
 
 [build-dependencies]
-slint-build = "1.6"
+slint-build = "1.7.2"
+
+
+[features]
+simulator = ["slint/renderer-winit-software", "slint/backend-winit"]
+
