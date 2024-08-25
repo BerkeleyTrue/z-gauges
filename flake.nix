@@ -2,7 +2,7 @@
   description = "Gauges for my datsun, built with slint";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
 
     nixgl.url = "github:nix-community/nixGL";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -55,9 +55,7 @@
           buildInputs = with pkgs; [
             cargo
             cargo-generate
-            cargo-udeps
             rustup
-            rustc
             rustfmt
 
             # slint tools
@@ -78,27 +76,12 @@
 
             buildInputs = buildInputs;
 
-            # LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
-
-            # https://github.com/Mic92/nix-ld
-            # NIX_LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-            #   pkgs.stdenv.cc.cc
-            #   pkgs.libxml2
-            # ];
-            # NIX_LD = pkgs.runCommand "ld.so" {} ''
-            #   ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
-            # '';
-
             shellHook = ''
               echo -e "\e[1mInstalling toolchains for esp"
               echo -e "-----------------------------\e[0m"
-              espup install
-              . ~/export-esp.sh
-
-              echo
-              echo -e "\e[1mInstalling ldproxy"
-              echo -e "------------------\e[0m"
-              cargo install ldproxy
+              espup install --targets esp32s3 --export-file ./exports-esp.sh
+              source ./exports-esp.sh
+              export PATH=$PATH:$HOME/.cargo/bin
             '';
           };
       };
