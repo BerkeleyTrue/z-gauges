@@ -55,8 +55,10 @@
           buildInputs = with pkgs; [
             cargo
             cargo-generate
+             # rustc is provided espup tooling
             rustup
             rustfmt
+            rust-analyzer
 
             # slint tools
             libGL
