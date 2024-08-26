@@ -2,9 +2,10 @@
   description = "Gauges for my datsun, built with slint";
 
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+
     nixgl.url = "github:nix-community/nixGL";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     boulder.url = "github:berkeleytrue/nix-boulder-banner";
   };
 
@@ -34,6 +35,10 @@
           echo "nix cargo run"
           ${pkgs.nixgl.auto.nixGLDefault}/bin/nixGL cargo run
         '';
+        build = pkgs.writeShellScriptBin "build" ''
+          echo "nix cargo build"
+          ${pkgs.nixgl.auto.nixGLDefault}/bin/nixGL cargo build
+        '';
       in {
         formatter.default = pkgs.alejandra;
         boulder.commands = [
@@ -41,16 +46,28 @@
             exec = run;
             description = "cargo run";
           }
+          {
+            exec = build;
+            description = "cargo build";
+          }
         ];
         devShells.default = let
           buildInputs = with pkgs; [
-            openssl
             cargo
-            rustc
+            cargo-generate
+             # rustc is provided espup tooling
+            rustup
             rustfmt
+            rust-analyzer
+
+            # slint tools
             libGL
             qt5.full
             ffmpeg
+
+            # esp dev
+            espup
+            espflash # flash binary to esp
           ];
         in
           pkgs.mkShell {
@@ -61,7 +78,13 @@
 
             buildInputs = buildInputs;
 
-            # LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+            shellHook = ''
+              echo -e "\e[1mInstalling toolchains for esp"
+              echo -e "-----------------------------\e[0m"
+              espup install --targets esp32s3 --export-file ./exports-esp.sh
+              source ./exports-esp.sh
+              export PATH=$PATH:$HOME/.cargo/bin
+            '';
           };
       };
       flake = {};
