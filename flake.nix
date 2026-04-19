@@ -1,10 +1,8 @@
 {
-  description = "Gauges for my datsun, built with slint";
+  description = "Gauges for my datsun -- ESP32-S3 + LVGL via ESP-IDF";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-
-    nixgl.url = "github:nix-community/nixGL";
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
@@ -20,45 +18,48 @@
         system,
         ...
       }: let
-        pkgs = import nixpkgs {
-          inherit system;
-
-          overlays = [
-            inputs.nixgl.overlay
-          ];
-        };
+        pkgs = import nixpkgs {inherit system;};
       in {
         formatter.default = pkgs.alejandra;
         devShells.default = let
           buildInputs = with pkgs; [
             just
 
-            cargo
-            cargo-generate
-             # rustc is provided espup tooling
+            # Rust -- rustup manages the actual toolchain (esp channel)
             rustup
-            rustfmt
             rust-analyzer
 
-            # slint tools
-            libGL
-            qt5.full
-            ffmpeg
-
-            # esp dev
+            # ESP toolchain
             espup
-            espflash # flash binary to esp
+            espflash
+
+            # Required by embuild / ESP-IDF build system
+            cmake
+            ninja
+            python3
+            pkg-config
+            git
           ];
         in
           pkgs.mkShell {
-            name = "rust";
+            name = "z-gauges";
             buildInputs = buildInputs;
 
             shellHook = ''
-              echo -e "\e[1mInstalling toolchains for esp"
-              echo -e "-----------------------------\e[0m"
-              espup install --targets esp32s3 --export-file ./exports-esp.sh
+              echo -e "\e[1mSetting up ESP32-S3 toolchain\e[0m"
+
+              # Only install if the export file is missing (avoids re-downloading on every shell entry)
+              if [ ! -f ./exports-esp.sh ]; then
+                espup install --targets esp32s3 --export-file ./exports-esp.sh
+              fi
               source ./exports-esp.sh
+
+              # ldproxy is the linker wrapper required by esp-idf-sys
+              if ! command -v ldproxy &>/dev/null; then
+                echo "Installing ldproxy..."
+                cargo install ldproxy
+              fi
+
               export PATH=$PATH:$HOME/.cargo/bin
             '';
           };

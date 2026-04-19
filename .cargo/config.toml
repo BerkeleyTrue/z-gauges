@@ -1,15 +1,13 @@
-[target.xtensa-esp32s3-none-elf]
-runner = "sudo espflash flash --monitor"
+[target.xtensa-esp32s3-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
 
 [env]
-ESP_LOGLEVEL="INFO"
+ESP_IDF_VERSION = "v5.3"
+ESP_IDF_SDKCONFIG_DEFAULTS = "sdkconfig.defaults"
 
 [build]
-rustflags = [
-  "-C", "link-arg=-nostartfiles",
-]
-
-target = "xtensa-esp32s3-none-elf"
+target = "xtensa-esp32s3-espidf"
 
 [unstable]
-build-std = ["core", "alloc"]
+build-std = ["std", "panic_abort"]
