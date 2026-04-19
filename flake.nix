@@ -6,7 +6,6 @@
 
     nixgl.url = "github:nix-community/nixGL";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    boulder.url = "github:berkeleytrue/nix-boulder-banner";
   };
 
   outputs = inputs @ {
@@ -15,9 +14,6 @@
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      imports = [
-        inputs.boulder.flakeModule
-      ];
       systems = ["x86_64-linux"];
       perSystem = {
         config,
@@ -31,28 +27,12 @@
             inputs.nixgl.overlay
           ];
         };
-        run = pkgs.writeShellScriptBin "run" ''
-          echo "nix cargo run"
-          ${pkgs.nixgl.auto.nixGLDefault}/bin/nixGL cargo run
-        '';
-        build = pkgs.writeShellScriptBin "build" ''
-          echo "nix cargo build"
-          ${pkgs.nixgl.auto.nixGLDefault}/bin/nixGL cargo build
-        '';
       in {
         formatter.default = pkgs.alejandra;
-        boulder.commands = [
-          {
-            exec = run;
-            description = "cargo run";
-          }
-          {
-            exec = build;
-            description = "cargo build";
-          }
-        ];
         devShells.default = let
           buildInputs = with pkgs; [
+            just
+
             cargo
             cargo-generate
              # rustc is provided espup tooling
@@ -72,10 +52,6 @@
         in
           pkgs.mkShell {
             name = "rust";
-            inputsFrom = [
-              config.boulder.devShell
-            ];
-
             buildInputs = buildInputs;
 
             shellHook = ''
