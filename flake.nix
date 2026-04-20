@@ -27,6 +27,7 @@
 
             # Rust -- rustup manages the actual toolchain (esp channel)
             rustup
+            rustc
             rust-analyzer
 
             # ESP toolchain
