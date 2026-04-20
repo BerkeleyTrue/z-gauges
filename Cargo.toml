@@ -5,13 +5,13 @@ authors = ["Berkeley Martinez"]
 edition = "2021"
 
 [dependencies]
-esp-idf-sys = { version = "0.35", features = ["binstart"] }
-esp-idf-hal = "0.44"
-esp-idf-svc = "0.49"
+esp-idf-sys = { version = "0.37", features = ["binstart"] }
+esp-idf-hal = "0.46"
+esp-idf-svc = "0.52"
 log = "0.4"
 
 [build-dependencies]
-embuild = "0.32"
+embuild = "0.33"
 
 [profile.release]
 codegen-units = 1
