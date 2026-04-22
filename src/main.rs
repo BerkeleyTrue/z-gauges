@@ -17,7 +17,10 @@ const LCD_V_RES: i32 = 240;
 const LCD_PIXEL_CLOCK_HZ: u32 = 40_000_000;
 
 fn main() {
+    // Temporary. Will disappear once ESP-IDF 4.4 is released, but for now it is necessary to call this function once,
+    // or else some patches to the runtime implemented by esp-idf-sys might not link properly.
+    esp_idf_sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
-    log::info!("z-gauges starting...");
 
+    log::info!("z-gauges starting...");
 }
