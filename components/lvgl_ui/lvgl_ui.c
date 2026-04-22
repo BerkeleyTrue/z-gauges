@@ -1,90 +1,36 @@
 #include "lvgl_ui.h"
 #include "lvgl.h"
-#include "esp_lcd_panel_ops.h"
-#include "esp_lcd_touch_cst816s.h"
 #include "esp_timer.h"
 #include "esp_log.h"
-#include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 static const char *TAG = "lvgl_ui";
 
-static lv_display_t         *s_display = NULL;
-static esp_lcd_touch_handle_t s_touch  = NULL;
+static lv_display_t *s_display = NULL;
 
 // ============================================================
-// Exposed to Rust: DMA flush-done callback
-// Must live in C because it calls lv_display_flush_ready() (LVGL type).
+// Provided by Rust: hardware operations
 // ============================================================
-bool lvgl_on_color_trans_done(esp_lcd_panel_io_handle_t io,
-                               esp_lcd_panel_io_event_data_t *edata,
-                               void *user_ctx)
-{
-    (void)io; (void)edata; (void)user_ctx;
-    lv_display_flush_ready(s_display);
-    return false;
-}
-
-// ============================================================
-// Exposed to Rust: CST816S init shim
-// esp_lcd_touch_config_t is from the component registry and is not
-// available in esp-idf-sys bindings, so this lives in C.
-// ============================================================
-void *lvgl_touch_new_cst816s(int sda_pin, int scl_pin,
-                              int rst_pin, int int_pin,
-                              int x_max, int y_max)
-{
-    i2c_master_bus_config_t i2c_cfg = {
-        .clk_source             = I2C_CLK_SRC_DEFAULT,
-        .i2c_port               = I2C_NUM_0,
-        .scl_io_num             = scl_pin,
-        .sda_io_num             = sda_pin,
-        .glitch_ignore_cnt      = 7,
-        .flags.enable_internal_pullup = true,
-    };
-    i2c_master_bus_handle_t i2c_bus;
-    ESP_ERROR_CHECK(i2c_master_bus_create(I2C_NUM_0, &i2c_cfg, &i2c_bus));
-
-    esp_lcd_panel_io_handle_t tp_io;
-    esp_lcd_panel_io_i2c_config_t tp_io_cfg = ESP_LCD_TOUCH_IO_I2C_CST816S_CONFIG();
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_bus, &tp_io_cfg, &tp_io));
-
-    esp_lcd_touch_config_t tp_cfg = {
-        .x_max        = (uint16_t)x_max,
-        .y_max        = (uint16_t)y_max,
-        .rst_gpio_num = rst_pin,
-        .int_gpio_num = int_pin,
-        .levels       = { .reset = 0, .interrupt = 0 },
-        .flags        = { .swap_xy = 0, .mirror_x = 0, .mirror_y = 0 },
-    };
-    esp_lcd_touch_handle_t touch;
-    ESP_ERROR_CHECK(esp_lcd_touch_new_i2c_cst816s(tp_io, &tp_cfg, &touch));
-    return (void *)touch;
-}
+extern void rust_lcd_draw(int x1, int y1, int x2, int y2, const uint8_t *px_map);
+extern bool rust_touch_read(int16_t *x, int16_t *y);
 
 // ============================================================
 // LVGL internals
 // ============================================================
 static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
-    esp_lcd_panel_handle_t panel =
-        (esp_lcd_panel_handle_t)lv_display_get_user_data(disp);
-    esp_lcd_panel_draw_bitmap(panel,
-        area->x1, area->y1, area->x2 + 1, area->y2 + 1,
-        (uint16_t *)px_map);
+    rust_lcd_draw(area->x1, area->y1, area->x2, area->y2, px_map);
+    lv_display_flush_ready(disp);
 }
 
 static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data)
 {
     (void)indev;
-    uint16_t x[1], y[1];
-    uint8_t cnt = 0;
-    esp_lcd_touch_read_data(s_touch);
-    bool touched = esp_lcd_touch_get_coordinates(s_touch, x, y, NULL, &cnt, 1);
-    if (touched && cnt > 0) {
-        data->point.x = x[0];
-        data->point.y = y[0];
+    int16_t x, y;
+    if (rust_touch_read(&x, &y)) {
+        data->point.x = x;
+        data->point.y = y;
         data->state = LV_INDEV_STATE_PRESSED;
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
@@ -113,10 +59,8 @@ static void ui_build(void)
 // ============================================================
 // Public API
 // ============================================================
-void lvgl_ui_init(void *panel, void *touch, int h_res, int v_res)
+void lvgl_ui_init(int h_res, int v_res)
 {
-    s_touch = (esp_lcd_touch_handle_t)touch;
-
     ESP_LOGI(TAG, "LVGL init...");
     lv_init();
 
@@ -128,7 +72,6 @@ void lvgl_ui_init(void *panel, void *touch, int h_res, int v_res)
     lv_display_set_flush_cb(s_display, flush_cb);
     lv_display_set_buffers(s_display, draw_buf, NULL, buf_bytes,
                            LV_DISPLAY_RENDER_MODE_PARTIAL);
-    lv_display_set_user_data(s_display, panel); // flush_cb retrieves panel here
 
     lv_indev_t *indev = lv_indev_create();
     lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
