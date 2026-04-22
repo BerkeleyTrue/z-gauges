@@ -1,3 +1,6 @@
+default:
+    @just --list
+
 # Build debug (first build downloads ESP-IDF ~500MB -- takes a while)
 build:
     cargo build
@@ -17,6 +20,10 @@ flash-release:
 # Open serial monitor without flashing
 monitor:
     espflash monitor
+
+# Build the LSP docker image (rust-analyzer for ESP32 cross-compilation)
+lsp:
+    docker build -t z-gauges-rust-analyzer -f lsp/Dockerfile .
 
 # Remove build artifacts (keeps downloaded ESP-IDF)
 clean:
