@@ -3,4 +3,7 @@
       wd (os.getenv "PWD")]
   ; this sets up lspconfig to run rust analyzer through the created docker container
   ; for this project
-  (vim.lsp.config :rust_analyzer {:cmd [:docker :run :-i :--rm :-v (.. wd ":" wd) :z-gauges-rust-analyzer :rust-analyzer]}))
+  (vim.lsp.config :rust_analyzer
+    {:cmd [:docker :run :-i :--rm :-v (.. wd ":" wd) :z-gauges-rust-analyzer :rust-analyzer]
+     :settings {:rust-analyzer {:cargo {:buildScripts {:enable false}}
+                                :procMacro {:enable false}}}}))
